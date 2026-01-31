@@ -77,15 +77,6 @@ The chosen model reflects a **business-aware compromise**, prioritizing the iden
 - Results interpreted with awareness of bias in impurity-based importance
 - The project is designed to be easily extended with advanced interpretability tools (e.g., SHAP)
 
----
-
-## Project Structure
-
-
-├── Customer_Churn.ipynb
-├── data/
-│   └── dataset.csv
-└── README.md
 
 
 
