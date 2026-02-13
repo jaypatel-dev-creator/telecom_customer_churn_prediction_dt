@@ -75,7 +75,7 @@ The chosen model reflects a **business-aware compromise**, prioritizing the iden
 
 #### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/your-username/telecom_customer_churn_prediction_dt.git
+git clone https://github.com/jaypatel-dev-creator/telecom_customer_churn_prediction_dt.git
 cd telecom_customer_churn_prediction_dt
 ```
 #### 2️⃣ (Optional but Recommended) Create Virtual Environment
