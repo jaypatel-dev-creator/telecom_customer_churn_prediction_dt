@@ -71,6 +71,31 @@ Cross-validation and hyperparameter tuning are used to ensure generalization.
 The chosen model reflects a **business-aware compromise**, prioritizing the identification of potential churners.
 
 ---
+### How to run this project locally 
+
+#### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/your-username/telecom_customer_churn_prediction_dt.git
+cd telecom_customer_churn_prediction_dt
+```
+#### 2️⃣ (Optional but Recommended) Create Virtual Environment
+```bash
+python -m venv venv
+source venv/bin/activate        # On Mac/Linux
+venv\Scripts\activate           # On Windows
+```
+#### 3️⃣ Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+#### 4️⃣ Launch Jupyter Notebook
+```bash
+jupyter notebook
+```
+Open `Customer_Churn.ipynb` and run all cells to reproduce the results.
+
+---
+
 
 ## Feature Importance & Interpretability
 - Feature importance analysis used to identify key churn drivers
