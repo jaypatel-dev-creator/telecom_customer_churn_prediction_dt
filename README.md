@@ -8,20 +8,51 @@ A machine learning project to predict customer churn for a telecom provider usin
 
 **Source:** [Telecom Customer Churn by Maven Analytics](https://www.kaggle.com/datasets/shilongzhuang/telecom-customer-churn-by-maven-analytics)
 
+- 7,043 customers, 38 features in the raw dataset
+- After cleaning: 6,589 customers, 30 features
+- Target: `Customer Status` — Churned (1) / Stayed (0)
+- Class distribution: ~71.6% Stayed, ~28.4% Churned
 
 ---
 
 
-## ML Pipeline
+## Data Cleaning & Preprocessing
 
-**Preprocessing**
-- Structural missing values handled based on service subscription context — not imputed with mean/median
-- High-cardinality column (`City`, 1,106 unique values) dropped before encoding
-- `OneHotEncoder(drop='first')` for categorical features — avoids multicollinearity
-- Numerical features passed through without scaling — tree-based models do not require it
-- Full `sklearn Pipeline` used to prevent data leakage
+**Columns removed before modelling:**
+- `Customer ID`, `Zip Code`, `Latitude`, `Longitude` — identifiers with no predictive value
+- `City` — 1,106 unique values, OHE would generate 1,100+ binary columns with minimal signal
+- `Churn Category`, `Churn Reason` — post-churn labels, using them as features would cause direct data leakage
+- Customers with `Customer Status = 'Joined'` removed — insufficient history to label as churned or stayed
 
-**Models**
+**Missing value handling — structural, not statistical:**
+- 3,877 customers with no active offer → filled with `'No Offer'`
+- 682 customers with no phone plan → `Multiple Lines` filled with `'No Phone Service'`, long distance charges filled with `0`
+- 1,526 customers with no internet plan → all internet-related features filled with `'No Internet Service'`, `Avg Monthly GB Download` filled with `0`
+
+Imputing these with mean or median would have introduced factually incorrect information into the dataset.
+
+**Encoding & scaling:**
+- `OneHotEncoder(drop='first')` for 18 categorical features — avoids multicollinearity
+- Numerical features passed through without scaling — tree-based models split on thresholds, not distances
+
+**Pipeline:**
+- Full `sklearn Pipeline` wrapping preprocessor and model — prevents data leakage and ensures consistent transformations during training and inference
+
+---
+
+## Churn Reason Analysis
+
+The dataset includes a `Churn Reason` column — used for business insight only, dropped before modelling.
+
+Top findings:
+- Competitor-related reasons (better devices, better offers, more data) account for the majority of churn
+- "Attitude of support person" is the third highest reason — a pure service experience issue independent of pricing
+- "Price too high" ranks lower than expected, suggesting customers are pulled away by competitors rather than pushed away by dissatisfaction
+
+---
+
+## Models
+
 Three models built in progression:
 
 | Model | Role |
@@ -54,13 +85,15 @@ Three models built in progression:
 
 ## Interpretability
 
-**Feature Importance** — impurity-based scores from LightGBM identify Monthly Charge, Age, and Tenure as top contributors.
+**Feature Importance** — impurity-based scores identify Monthly Charge, Age, and Tenure as top contributors.
 
-**SHAP Analysis** — TreeExplainer used for more reliable feature attribution. Key findings:
+**SHAP Analysis** — `TreeExplainer` used for more reliable feature attribution:
 - Low tenure customers have the highest churn risk
-- Customers on long-term contracts (One Year, Two Year) are significantly less likely to churn
+- Long-term contracts (One Year, Two Year) significantly reduce churn probability
 - Number of referrals is a strong loyalty signal — high referrers rarely churn
 - Monthly Charge shows less directional impact than impurity importance suggested — SHAP corrects this overstatement
+
+**Key cross-analysis insight:** The model's top feature (Monthly Charge) and the top customer-reported churn reason (competitor offerings) don't tell the same story. The model picks up on high monthly charges as a risk signal — but customers aren't necessarily leaving because the price is too high, they're leaving because a competitor made a better offer. Pricing sensitivity and competitive pressure are related but not the same thing.
 
 ---
 
