@@ -1,136 +1,108 @@
-# Customer Churn Prediction (Machine Learning)
+# Customer Churn Prediction
 
-## Overview
-This repository contains an end-to-end machine learning project focused on predicting customer churn using structured telecom data. The project emphasizes **clean preprocessing**, **robust model evaluation**, and **business-aware decision making**, rather than model complexity for its own sake.
-
-The primary objective is to identify customers at high risk of churning so that retention strategies can be applied proactively.
-
----
-
-## Problem Statement
-Customer churn directly impacts revenue and growth. Acquiring new customers is significantly more expensive than retaining existing ones.  
-This project formulates churn prediction as a **binary classification problem**, with a strong focus on handling **class imbalance** and selecting evaluation metrics aligned with real-world business costs.
+A machine learning project to predict customer churn for a telecom provider using demographic data, service usage patterns, and billing information. The project covers the full pipeline — from data cleaning and preprocessing to model training, hyperparameter tuning, evaluation, interpretability, and inference.
 
 ---
 
 ## Dataset
-- Structured telecom customer data
--source: https://www.kaggle.com/datasets/blastchar/telco-customer-churn
 
-Key challenges addressed:
-- Incorrect data types in raw features
-- Missing values introduced during type conversion
-- High-cardinality categorical variables
-- Imbalanced target distribution
+**Source:** [Telecom Customer Churn by Maven Analytics](https://www.kaggle.com/datasets/shilongzhuang/telecom-customer-churn-by-maven-analytics)
+
 
 ---
 
-## Approach
 
-### 1. Data Understanding & Cleaning
-- Explicit data type correction for numeric fields
-- Controlled handling of missing values
-- Clear separation of numerical and categorical features
-- No silent row drops or leakage-prone transformations
+## ML Pipeline
 
-### 2. Preprocessing Pipeline
-- `ColumnTransformer` used for clean feature handling
-- Standard scaling for numerical variables
-- One-hot encoding for categorical variables
-- Fully reproducible preprocessing integrated with modeling
+**Preprocessing**
+- Structural missing values handled based on service subscription context — not imputed with mean/median
+- High-cardinality column (`City`, 1,106 unique values) dropped before encoding
+- `OneHotEncoder(drop='first')` for categorical features — avoids multicollinearity
+- Numerical features passed through without scaling — tree-based models do not require it
+- Full `sklearn Pipeline` used to prevent data leakage
 
-### 3. Modeling Strategy
-Models evaluated:
-- Decision Tree (baseline)
-- Random Forest
-- Tuned Random Forest (final model)
+**Models**
+Three models built in progression:
 
-Key considerations:
-- Avoiding overfitting
-- Stability across cross-validation folds
-- Interpretability vs performance trade-offs
+| Model | Role |
+|-------|------|
+| Decision Tree | Baseline |
+| Random Forest | Ensemble improvement |
+| LightGBM (tuned) | Final model |
 
-### 4. Model Evaluation
-Given the imbalanced nature of churn data:
-- Accuracy is treated as a secondary metric
-- Primary focus on:
-  - Recall (churn class)
-  - Precision
-  - F1-score
-  - ROC-AUC
-
-Cross-validation and hyperparameter tuning are used to ensure generalization.
+**Hyperparameter Tuning**
+- `GridSearchCV` with `StratifiedKFold(n_splits=5)`
+- Scoring metric: `average_precision` (PR-AUC) — more informative than ROC-AUC for imbalanced data
+- 16 parameter combinations, 80 total fits
 
 ---
 
 ## Results
-- Random Forest significantly outperformed the baseline Decision Tree
-- Hyperparameter tuning improved recall and overall stability
-- Final model balances churn detection capability with acceptable false positives
 
-The chosen model reflects a **business-aware compromise**, prioritizing the identification of potential churners.
+| Metric | Decision Tree | Random Forest | Tuned LightGBM |
+|--------|--------------|---------------|----------------|
+| Test Accuracy | 0.84 | 0.84 | 0.85 |
+| Test ROC-AUC | 0.8926 | 0.9188 | 0.9201 |
+| Test PR-AUC | — | — | 0.8463 |
+| Churn Recall | 0.75 | 0.78 | 0.77 |
+| Churn Precision | 0.69 | 0.70 | 0.72 |
+| Churn F1 | 0.72 | 0.74 | 0.74 |
+
+**Decision threshold tuned to 0.5784** (optimised for F1) — improves churn precision to 0.76 over the default 0.5 threshold.
 
 ---
-### How to run this project locally 
 
-#### 1️⃣ Clone the Repository
-```bash
-git clone https://github.com/jaypatel-dev-creator/telecom_customer_churn_prediction_dt.git
-cd telecom_customer_churn_prediction_dt
+## Interpretability
+
+**Feature Importance** — impurity-based scores from LightGBM identify Monthly Charge, Age, and Tenure as top contributors.
+
+**SHAP Analysis** — TreeExplainer used for more reliable feature attribution. Key findings:
+- Low tenure customers have the highest churn risk
+- Customers on long-term contracts (One Year, Two Year) are significantly less likely to churn
+- Number of referrals is a strong loyalty signal — high referrers rarely churn
+- Monthly Charge shows less directional impact than impurity importance suggested — SHAP corrects this overstatement
+
+---
+
+## Inference
+
+```python
+import joblib
+import pandas as pd
+
+model = joblib.load('churn_model.pkl')
+
+customer = pd.DataFrame([{
+    'Gender': 'Male',
+    'Age': 35,
+    'Tenure in Months': 5,
+    'Contract': 'Month-to-Month',
+    'Monthly Charge': 95.0,
+    # ... remaining features
+}])
+
+proba = model.predict_proba(customer)[0][1]
+prediction = 'Churned' if proba >= 0.5784 else 'Stayed'
+print(f"Churn Probability: {proba:.4f} — {prediction}")
 ```
-#### 2️⃣ (Optional but Recommended) Create Virtual Environment
-```bash
-python -m venv venv
-source venv/bin/activate        # On Mac/Linux
-venv\Scripts\activate           # On Windows
-```
-#### 3️⃣ Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-#### 4️⃣ Launch Jupyter Notebook
-```bash
-jupyter notebook
-```
-Open `Customer_Churn.ipynb` and run all cells to reproduce the results.
 
 ---
 
+## Tech Stack
 
-## Feature Importance & Interpretability
-- Feature importance analysis used to identify key churn drivers
-- Results interpreted with awareness of bias in impurity-based importance
-- The project is designed to be easily extended with advanced interpretability tools (e.g., SHAP)
-
-
-
-
-
-
+- Python 3.12
+- scikit-learn
+- LightGBM
+- SHAP
+- pandas, numpy
+- matplotlib, seaborn
+- joblib
 
 ---
 
-## Tools & Technologies
-- Python
-- Pandas, NumPy
-- Scikit-learn
-- Jupyter Notebook
+## Future Work
 
----
-
-## Key Takeaways
-- Proper preprocessing often has more impact than model complexity
-- Metric selection must align with business objectives
-- Handling class imbalance is critical in churn prediction problems
-- Simpler models, when well-tuned, can outperform more complex baselines
-
----
-
-## Future Enhancements
-- Decision threshold optimization based on business cost
-- Precision–Recall curve analysis
-- SHAP-based feature explanations
-- Model deployment via REST API
-
-
-
+- Expand GridSearch to include LightGBM regularisation parameters (`reg_lambda`, `min_child_samples`) to reduce train-test gap
+- Business cost-based threshold tuning using actual retention campaign costs
+- FastAPI deployment as a REST inference endpoint
+- Scheduled retraining pipeline to handle data drift over time
